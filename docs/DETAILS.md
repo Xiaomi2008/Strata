@@ -259,8 +259,8 @@ RTX 5070, against ~3 tokens/s before these changes.
 
 **Opt-in switches measured on a hybrid Intel CPU under Windows (Core i7-13700K, 8 P + 8 E cores, RTX 5090, 64 GB RAM,
 Windows 11, Swift 1.5 IQ3_XXS at 128K):**
-**Opt-in switches measured on a hybrid Intel CPU under Windows (Core i7-13700K, 8 P + 8 E cores, RTX 5090, 64 GB RAM,
-Windows 11, Swift 1.5 IQ3_XXS at 128K):**
+- `STRATA_VRAM_FREE=device` (Windows, NVIDIA): `--expert-cache auto` reads the free VRAM of the whole card through NVML.
+  Under WDDM CUDA's own figure counts this process only: with 6 GiB held by another process it still read 30,994 MiB
   free where NVML read 24,348. With the image encoder loaded (1,547 MiB) the cache was therefore sized too large and
   shrunk by guesses: six starts of one config (engine 0.1.40.3 and 0.1.41, the default 700 MiB reserve) ended with
   9,002 to 14,454 slots and 93 MiB to 10 GiB free. With the switch and `--vram-reserve-mib 1500` (0.1.41 built from
@@ -270,13 +270,14 @@ Windows 11, Swift 1.5 IQ3_XXS at 128K):**
   MiB free. A run that filled the card to
   0 MiB free decoded 80-115 tok/s where the same text ran at 205-230 with 900 MiB or more free. Not measured: AMD
   cards, Linux (the switch is compiled for Windows CUDA builds only).
+- `--pool-affinity measure` (hybrid CPUs, native packs): the `all` and `p-cores` layouts are timed at start on the
+  pack's own experts (about a second) and the faster one is taken. Engine 0.1.41 built from source, the same prompt:
   `all` (15 workers) spent 6.7 ms per verify window in the CPU pool and decoded 148 tok/s, `p-cores` (7 workers) 2.2 ms
   and 188-191 tok/s; in another run of the same day `all` took 2.4 ms, so the difference comes and goes. The
   measurement is taken once, at start: over four server starts of one day it read `all` at 14.8, 21.9 and 25.3 ms
   against 6.1 to 6.2 ms for `p-cores` and took `p-cores`, and once read `all` at 6.6 ms against 8.6 ms and took `all`.
   It does not look again during a session, so where the E-cores' speed changes while the engine runs,
   `--pool-affinity p-cores` is the steady choice. Not measured: other CPUs, Linux, AMD cards.
-
 
 **Switches added in 0.1.40 (all off unless noted; none changes the default output):**
 - `--kv-grow` (or `STRATA_KV_GROW=1`; `--no-kv-grow` turns it off): the K/V takes VRAM only for the cells the requests
