@@ -985,6 +985,16 @@ requests' length keeps the long conversation parked. The check runs before `make
 nothing and stores nothing; the log line is `conversation cache: skip parking (N tokens, below the M minimum;
 parked=P)`. 0 is the pre-flag behaviour and the flag leaves the answers untouched - it only decides which
 conversations keep a slot.
+`STRATA_PARK_REWIND_MAX=N` (opt-in, off unless set): a request that resumes from a checkpoint of the conversation the
+session itself holds, leaving N tokens or fewer of it behind, does not park the session first. Without it every next turn
+of a chat whose client sends the last reply back without its thinking parks the whole live conversation (the prompt
+matches the turn's checkpoint, not the live end) and drops that copy as superseded one request later. Measured on a
+Core i7-13700K, RTX 5090, 64 GB, Windows 11, Swift 1.5 IQ3_S, `--conversation-cache-mib 6144`: twelve appended turns (47
+to 3,318 new tokens) on a 52K-token conversation took 10.4 s of prompt reading in all (each turn parked 1.4-1.6 GB in
+280-370 ms), 6.3 s with `STRATA_PARK_REWIND_MAX=8192`, and 6.4 s with the cache off; a real switch still parks and
+restores (back to an 80K conversation: 0.9 s against 12.2 s). The tokens are the same: parking is a cache. A request
+that leaves more than N tokens behind (another conversation on the shared system prompt) parks as before. Not measured:
+Linux, a layer split, `--batch`.
 `--conversation-cache-min-free-mib N` (default 2560) additionally requires that
 RAM headroom remain available: the engine checks before allocation (against the
 snapshot's estimated size, less the K/V it already retains) and again after capture.
